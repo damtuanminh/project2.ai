@@ -221,58 +221,53 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """
         "*** YOUR CODE HERE ***"
 
-        def alphabeta(state):
-            value, bestAction = None, None
-            a, b = None, None
+        def minValue(gameState, agentID, depth, a, b):
 
-            for action in state.getLegalActions(0):
-                value = max(value, minValue(state.generateSuccessor(0, action), 1, 1, a, b))
-                if a is None:
-                    a = value
-                    bestAction = action
-                else:
-                    a, bestAction = max(value, a), action if value > a else bestAction
-            return bestAction
+            actionList = gameState.getLegalActions(agentID)  # Get the actions of the ghost
+            if len(actionList) == 0:
+                return (self.evaluationFunction(gameState), None)
 
-        def minValue(state, agentIdx, depth, a, b):
-            if agentIdx == state.getNumAgents():
-                return maxValue(state, 0, depth + 1, a, b)
-            value = None
-            for action in state.getLegalActions(agentIdx):
-                succ = minValue(state.generateSuccessor(agentIdx, action), agentIdx + 1, depth, a, b)
-                if value is None:
-                    value = succ
-                else:
-                    value = min(value, succ)
-                if a is not None and value < a:
-                    return value
-                if b is None:
-                    b = value
-                else:
-                    b = min(b, value)
-            if value is not None:
-                return value
-            else:
-                return self.evaluationFunction(state)
+            value = float("inf")
+            bestAction = None
 
-        def maxValue(state, agentIdx, depth, a, b):
-            if depth > self.depth:
-                return self.evaluationFunction(state)
-            value = None
-            for action in state.getLegalActions(agentIdx):
-                succ = minValue(state.generateSuccessor(agentIdx, action), agentIdx + 1, depth, a, b)
-                value = max(value, succ)
-                if b is not None and value > b:
-                    return value
+            for action in actionList:
+                if (agentID == gameState.getNumAgents() - 1):
+                    succ = maxValue(gameState.generateSuccessor(agentID, action), depth + 1, a, b)[0]
+                else:
+                    succ = minValue(gameState.generateSuccessor(agentID, action), agentID + 1, depth, a, b)[0]
+
+                if (succ < value):
+                    value, bestAction = succ, action
+
+                if (value < a):
+                    return (value, bestAction)
+
+                b = min(b, value)
+
+            return (value, bestAction)
+
+        def maxValue(gameState, depth, a, b):
+            actionList = gameState.getLegalActions(0)  # Get actions of pacman
+            if len(actionList) == 0 or gameState.isWin() or gameState.isLose() or depth == self.depth:
+                return (self.evaluationFunction(gameState), None)
+
+            value = -(float("inf"))
+            bestAction = None
+            for action in actionList:
+                succ = minValue(gameState.generateSuccessor(0, action), 1, depth, a, b)[0]
+                if (value < succ):
+                    value, bestAction = succ, action
+
+                if (value > b):
+                    return (value, bestAction)
+
                 a = max(a, value)
-            if value is not None:
-                return value
-            else:
-                return self.evaluationFunction(state)
 
-        action = alphabeta(gameState)
+            return (value, bestAction)
 
-        return action
+        alpha = -(float("inf"))
+        beta = float("inf")
+        return maxValue(gameState, 0, alpha, beta)[1]
 
 
     #     return self.maxval(gameState, 0, 0, -float("inf"), float("inf"))[0]
@@ -369,6 +364,7 @@ def betterEvaluationFunction(currentGameState):
     DESCRIPTION: <write something here so we know what you did>
     """
     "*** YOUR CODE HERE ***"
+
     newPos = currentGameState.getPacmanPosition()
     newFood = currentGameState.getFood()
     newGhostStates = currentGameState.getGhostStates()
@@ -382,9 +378,9 @@ def betterEvaluationFunction(currentGameState):
         closestCapsule = 0
 
     if closestCapsule:
-        closest_capsule = -3 / closestCapsule
+        closest_capsule = -20 / closestCapsule
     else:
-        closest_capsule = 100
+        closest_capsule = 200
 
     if closestGhost:
         ghost_distance = -2 / closestGhost
@@ -397,8 +393,8 @@ def betterEvaluationFunction(currentGameState):
     else:
         closestFood = 0
 
-    return -2 * closestFood + ghost_distance - 10 * len(foodList) + closest_capsule
-    # util.raiseNotDefined()
+    return -1.5 * closestFood + ghost_distance - 20 * len(foodList) + closest_capsule
+
 
 # Abbreviation
 better = betterEvaluationFunction
